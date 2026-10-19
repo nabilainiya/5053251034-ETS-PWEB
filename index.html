@@ -1,0 +1,297 @@
+
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="myRupiah - Aplikasi pencatatan keuangan sederhana untuk pengemudi ojek online.">
+  <title>myRupiah</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="script.js" defer></script>
+</head>
+
+<body>
+  <div class="app-layout">
+
+    <aside class="sidebar">
+      <a href="#" class="brand" aria-label="myRupiah beranda">
+        <span class="brand-icon">Rp</span>
+        <span>myRupiah</span>
+      </a>
+
+      <p class="nav-caption">MENU UTAMA</p>
+
+      <nav class="navigation" aria-label="Navigasi utama">
+        <button class="nav-link active" data-page="ringkasan">
+          <span class="nav-icon">⌂</span>
+          Ringkasan Keuangan
+        </button>
+
+        <button class="nav-link" data-page="transaksi">
+          <span class="nav-icon">↔</span>
+          Transaksi
+        </button>
+
+        <button class="nav-link" data-page="anggaran">
+          <span class="nav-icon">▤</span>
+          Anggaran per Kategori
+        </button>
+      </nav>
+
+      <div class="sidebar-note">
+        <span class="note-icon">✦</span>
+        <strong>Kelola keuanganmu</strong>
+        <p>Catat pendapatan dan pengeluaran harian dengan lebih mudah.</p>
+      </div>
+
+      <p class="sidebar-footer">myRupiah © 2026</p>
+    </aside>
+
+    <main class="main-content">
+
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">PENGELOLAAN KEUANGAN</p>
+          <p class="topbar-subtitle">
+            Catatan keuangan untuk aktivitas sehari-hari.
+          </p>
+        </div>
+
+        <span class="today-badge" id="todayDate">Hari ini</span>
+      </header>
+
+      <!-- HALAMAN 1: RINGKASAN -->
+      <section class="page active" id="page-ringkasan">
+        <div class="page-heading">
+          <div>
+            <p class="eyebrow">DASHBOARD</p>
+            <h1>Ringkasan Keuangan</h1>
+            <p class="page-description">
+              Pantau kondisi keuanganmu dalam satu tempat.
+            </p>
+          </div>
+
+          <button class="button button-primary" id="goToAddTransaction">
+            + Tambah Transaksi
+          </button>
+        </div>
+
+        <div class="summary-grid">
+          <article class="summary-card income-card">
+            <div class="card-label">
+              <span class="metric-icon">↗</span>
+              Total Pemasukan
+            </div>
+            <p class="metric-value" id="totalIncome">Rp0</p>
+            <p class="metric-caption">Seluruh transaksi pemasukan</p>
+          </article>
+
+          <article class="summary-card expense-card">
+            <div class="card-label">
+              <span class="metric-icon">↙</span>
+              Total Pengeluaran
+            </div>
+            <p class="metric-value" id="totalExpense">Rp0</p>
+            <p class="metric-caption">Seluruh transaksi pengeluaran</p>
+          </article>
+
+          <article class="summary-card balance-card">
+            <div class="card-label">
+              <span class="metric-icon">Rp</span>
+              Saldo
+            </div>
+            <p class="metric-value" id="totalBalance">Rp0</p>
+            <p class="metric-caption">Pemasukan dikurangi pengeluaran</p>
+          </article>
+        </div>
+
+        <section class="panel">
+          <div class="panel-heading">
+            <div>
+              <h2>Transaksi Terbaru</h2>
+              <p>Catatan keuangan yang terakhir kamu masukkan.</p>
+            </div>
+
+            <button class="text-button" data-open-page="transaksi">
+              Lihat semua →
+            </button>
+          </div>
+
+          <div class="transaction-list" id="recentTransactions">
+            <p class="empty-state">
+              Belum ada transaksi. Tambahkan transaksi pertamamu!
+            </p>
+          </div>
+        </section>
+      </section>
+
+      <!-- HALAMAN 2: TRANSAKSI -->
+      <section class="page" id="page-transaksi">
+        <div class="page-heading">
+          <div>
+            <p class="eyebrow">PENCATATAN</p>
+            <h1>Transaksi</h1>
+            <p class="page-description">
+              Catat pemasukan dan pengeluaranmu.
+            </p>
+          </div>
+        </div>
+
+        <section class="panel form-panel" id="transactionFormPanel">
+          <div class="panel-heading">
+            <div>
+              <h2>Tambah Transaksi</h2>
+              <p>Masukkan informasi transaksi di bawah ini.</p>
+            </div>
+          </div>
+
+          <form id="transactionForm">
+            <div class="form-grid">
+              <div class="form-field">
+                <label for="transactionDate">Tanggal</label>
+                <input
+                  type="date"
+                  id="transactionDate"
+                  required
+                >
+              </div>
+
+              <div class="form-field">
+                <label for="transactionType">Jenis Transaksi</label>
+                <select id="transactionType" required>
+                  <option value="pemasukan">Pemasukan</option>
+                  <option value="pengeluaran">Pengeluaran</option>
+                </select>
+              </div>
+
+              <div class="form-field">
+                <label for="transactionCategory">Kategori</label>
+                <select id="transactionCategory" required>
+                  <option value="Pendapatan Ojol">Pendapatan Ojol</option>
+                  <option value="Bonus">Bonus</option>
+                  <option value="Bensin">Bensin</option>
+                  <option value="Makanan">Makanan</option>
+                  <option value="Perawatan Kendaraan">Perawatan Kendaraan</option>
+                  <option value="Kebutuhan Pribadi">Kebutuhan Pribadi</option>
+                  <option value="Lainnya">Lainnya</option>
+                </select>
+              </div>
+
+              <div class="form-field">
+                <label for="transactionAmount">Jumlah (Rp)</label>
+                <input
+                  type="number"
+                  id="transactionAmount"
+                  min="1"
+                  step="1"
+                  placeholder="Contoh: 50000"
+                  required
+                >
+              </div>
+
+              <div class="form-field form-field-full">
+                <label for="transactionNote">Catatan (opsional)</label>
+                <input
+                  type="text"
+                  id="transactionNote"
+                  maxlength="120"
+                  placeholder="Contoh: Pendapatan narik pagi"
+                >
+              </div>
+            </div>
+
+            <div class="form-actions">
+              <button type="reset" class="button button-secondary">
+                Reset
+              </button>
+              <button type="submit" class="button button-primary">
+                Simpan Transaksi
+              </button>
+            </div>
+          </form>
+        </section>
+
+        <section class="panel">
+          <div class="panel-heading">
+            <div>
+              <h2>Semua Transaksi</h2>
+              <p>Daftar pemasukan dan pengeluaran yang tercatat.</p>
+            </div>
+          </div>
+
+          <div class="transaction-list" id="allTransactions">
+            <p class="empty-state">Belum ada transaksi.</p>
+          </div>
+        </section>
+      </section>
+
+      <!-- HALAMAN 3: ANGGARAN -->
+      <section class="page" id="page-anggaran">
+        <div class="page-heading">
+          <div>
+            <p class="eyebrow">PERENCANAAN KEUANGAN</p>
+            <h1>Anggaran per Kategori</h1>
+            <p class="page-description">
+              Kenali kategori pengeluaran untuk membantu mengatur keuangan.
+            </p>
+          </div>
+        </div>
+
+        <section class="panel">
+          <div class="panel-heading">
+            <div>
+              <h2>Kategori Keuangan</h2>
+              <p>Kategori yang tersedia dalam pencatatan myRupiah.</p>
+            </div>
+          </div>
+
+          <div class="category-list">
+            <article class="category-item">
+              <span class="category-icon citron">↗</span>
+              <div>
+                <h3>Pendapatan Ojol</h3>
+                <p>Pemasukan dari perjalanan atau pesanan.</p>
+              </div>
+            </article>
+
+            <article class="category-item">
+              <span class="category-icon butter">⛽</span>
+              <div>
+                <h3>Bensin</h3>
+                <p>Biaya bahan bakar untuk operasional.</p>
+              </div>
+            </article>
+
+            <article class="category-item">
+              <span class="category-icon lavender">▣</span>
+              <div>
+                <h3>Perawatan Kendaraan</h3>
+                <p>Servis, perbaikan, dan kebutuhan kendaraan.</p>
+              </div>
+            </article>
+
+            <article class="category-item">
+              <span class="category-icon purple">♡</span>
+              <div>
+                <h3>Kebutuhan Pribadi</h3>
+                <p>Makanan dan kebutuhan sehari-hari.</p>
+              </div>
+            </article>
+          </div>
+
+          <p class="helper-text">
+            Pengaturan nominal anggaran dan peringatan batas anggaran belum
+            termasuk dalam versi dasar ini.
+          </p>
+        </section>
+      </section>
+
+      <footer class="main-footer">
+        myRupiah — Catat, pahami, dan kelola keuanganmu.
+      </footer>
+    </main>
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+</body>
+</html>
