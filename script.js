@@ -1,37 +1,18 @@
 "use strict";
 
-/* STORAGE */
 const STORAGE_KEY = "myRupiahTransactions";
 
 let transactions = loadTransactions();
 
-/* ELEMENTS */
-const navigationButtons = document.querySelectorAll(".nav-link");
-const pages = document.querySelectorAll(".page");
-
 const transactionForm = document.getElementById("transactionForm");
-const transactionDate = document.getElementById("transactionDate");
 const transactionType = document.getElementById("transactionType");
 const transactionCategory = document.getElementById("transactionCategory");
+const transactionDate = document.getElementById("transactionDate");
 const transactionAmount = document.getElementById("transactionAmount");
 const transactionNote = document.getElementById("transactionNote");
+const toast = document.getElementById("toast");
 
-const totalIncomeElement = document.getElementById("totalIncome");
-const totalExpenseElement = document.getElementById("totalExpense");
-const totalBalanceElement = document.getElementById("totalBalance");
-
-const recentTransactionsElement =
-  document.getElementById("recentTransactions");
-
-const allTransactionsElement =
-  document.getElementById("allTransactions");
-
-const todayDateElement = document.getElementById("todayDate");
-const toastElement = document.getElementById("toast");
-
-let toastTimeout;
-
-/* DATE AND CURRENCY FORMATTING */
+// Format tanggal lokal sebagai YYYY-MM-DD tanpa masalah zona waktu.
 function getLocalDateString(date = new Date()) {
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, "0");
@@ -40,52 +21,28 @@ function getLocalDateString(date = new Date()) {
   return `${year}-${month}-${day}`;
 }
 
-function formatDate(dateString) {
-  if (!dateString) return "-";
-
-  const date = new Date(`${dateString}T00:00:00`);
-
-  if (Number.isNaN(date.getTime())) {
-    return dateString;
-  }
-
-  return date.toLocaleDateString("id-ID", {
-    day: "numeric",
-    month: "short",
-    year: "numeric"
-  });
-}
-
-function formatRupiah(amount) {
-  return new Intl.NumberFormat("id-ID", {
-    style: "currency",
-    currency: "IDR",
-    maximumFractionDigits: 0
-  }).format(amount);
-}
-
-/* LOCAL STORAGE */
+// Memuat transaksi dari localStorage.
 function loadTransactions() {
   try {
-    const savedData = localStorage.getItem(STORAGE_KEY);
+    const savedTransactions = localStorage.getItem(STORAGE_KEY);
 
-    if (!savedData) return [];
+    if (!savedTransactions) {
+      return [];
+    }
 
-    const parsedData = JSON.parse(savedData);
+    const parsedTransactions = JSON.parse(savedTransactions);
 
-    if (!Array.isArray(parsedData)) return [];
+    if (!Array.isArray(parsedTransactions)) {
+      return [];
+    }
 
-    return parsedData.filter((item) => {
+    return parsedTransactions.filter((transaction) => {
       return (
-        item &&
-        typeof item.id === "string" &&
-        (item.type === "pemasukan" ||
-          item.type === "pengeluaran") &&
-        typeof item.amount === "number" &&
-        Number.isFinite(item.amount) &&
-        item.amount > 0 &&
-        typeof item.date === "string" &&
-        typeof item.category === "string"
+        transaction &&
+        typeof transaction.date === "string" &&
+        ["income", "expense"].includes(transaction.type) &&
+        Number.isFinite(Number(transaction.amount)) &&
+        Number(transaction.amount) > 0
       );
     });
   } catch (error) {
@@ -94,13 +51,10 @@ function loadTransactions() {
   }
 }
 
+// Menyimpan transaksi.
 function saveTransactions() {
   try {
-    localStorage.setItem(
-      STORAGE_KEY,
-      JSON.stringify(transactions)
-    );
-
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(transactions));
     return true;
   } catch (error) {
     console.error("Gagal menyimpan transaksi:", error);
@@ -109,219 +63,260 @@ function saveTransactions() {
   }
 }
 
-/* NOTIFICATION */
-function showToast(message) {
-  toastElement.textContent = message;
-  toastElement.hidden = false;
+// Menampilkan notifikasi.
+let toastTimeout;
 
-  if (toastTimeout) {
-    clearTimeout(toastTimeout);
-  }
+function showToast(message) {
+  toast.textContent = message;
+  toast.classList.add("show");
+
+  clearTimeout(toastTimeout);
 
   toastTimeout = setTimeout(() => {
-    toastElement.hidden = true;
-  }, 2800);
+    toast.classList.remove("show");
+  }, 2500);
 }
 
-/* NAVIGATION */
+// Navigasi halaman.
 function openPage(pageName) {
-  const targetPage = document.getElementById(`page-${pageName}`);
-
-  if (!targetPage) return;
-
-  pages.forEach((page) => {
-    page.classList.toggle("active", page === targetPage);
+  document.querySelectorAll(".page").forEach((page) => {
+    page.classList.remove("active");
   });
 
-  navigationButtons.forEach((button) => {
-    const isActive = button.dataset.page === pageName;
-
-    button.classList.toggle("active", isActive);
-
-    if (isActive) {
-      button.setAttribute("aria-current", "page");
-    } else {
-      button.removeAttribute("aria-current");
-    }
+  document.querySelectorAll(".nav-link").forEach((button) => {
+    button.classList.toggle(
+      "active",
+      button.dataset.page === pageName
+    );
   });
 
-  window.scrollTo({
-    top: 0,
-    behavior: "auto"
-  });
+  const targetPage = document.getElementById(`${pageName}Page`);
+
+  if (targetPage) {
+    targetPage.classList.add("active");
+  }
 }
 
-navigationButtons.forEach((button) => {
+document.querySelectorAll("[data-page]").forEach((button) => {
   button.addEventListener("click", () => {
     openPage(button.dataset.page);
   });
 });
 
-/* DASHBOARD SHORTCUTS */
-const addTransactionButton =
-  document.getElementById("goToAddTransaction");
+// Menampilkan tanggal pada navbar.
+function renderDate() {
+  const today = new Date();
 
-addTransactionButton.addEventListener("click", () => {
-  openPage("transaksi");
-  transactionDate.focus();
-});
-
-document.querySelectorAll("[data-open-page]").forEach((button) => {
-  button.addEventListener("click", () => {
-    openPage(button.dataset.openPage);
-  });
-});
-
-/* FINANCIAL SUMMARY */
-function renderSummary() {
-  const totalIncome = transactions
-    .filter((transaction) => transaction.type === "pemasukan")
-    .reduce((sum, transaction) => sum + transaction.amount, 0);
-
-  const totalExpense = transactions
-    .filter((transaction) => transaction.type === "pengeluaran")
-    .reduce((sum, transaction) => sum + transaction.amount, 0);
-
-  const balance = totalIncome - totalExpense;
-
-  totalIncomeElement.textContent = formatRupiah(totalIncome);
-  totalExpenseElement.textContent = formatRupiah(totalExpense);
-  totalBalanceElement.textContent = formatRupiah(balance);
+  document.getElementById("todayDate").textContent =
+    today.toLocaleDateString("id-ID", {
+      day: "numeric",
+      month: "short",
+      year: "numeric"
+    });
 }
 
-/* TRANSACTION DISPLAY */
+// Format mata uang Rupiah.
+function formatRupiah(amount) {
+  return new Intl.NumberFormat("id-ID", {
+    style: "currency",
+    currency: "IDR",
+    maximumFractionDigits: 0
+  }).format(amount);
+}
+
+// Mengatur kategori berdasarkan jenis transaksi.
+function updateCategoryOptions() {
+  const categories =
+    transactionType.value === "income"
+      ? [
+          "Pendapatan Ojol",
+          "Pendapatan Lainnya"
+        ]
+      : [
+          "Bensin",
+          "Makan/Minum",
+          "Perawatan Kendaraan",
+          "Parkir",
+          "Pengeluaran Lainnya"
+        ];
+
+  transactionCategory.replaceChildren();
+
+  categories.forEach((category) => {
+    const option = document.createElement("option");
+    option.value = category;
+    option.textContent = category;
+    transactionCategory.appendChild(option);
+  });
+}
+
+transactionType.addEventListener("change", updateCategoryOptions);
+
+// Mengurutkan transaksi dari tanggal terbaru.
+function getSortedTransactions() {
+  return [...transactions].sort((a, b) => {
+    if (a.date !== b.date) {
+      return b.date.localeCompare(a.date);
+    }
+
+    return Number(b.id) - Number(a.id);
+  });
+}
+
+// Menghitung dan menampilkan ringkasan.
+function renderSummary() {
+  const totalIncome = transactions
+    .filter((transaction) => transaction.type === "income")
+    .reduce((total, transaction) => {
+      return total + Number(transaction.amount);
+    }, 0);
+
+  const totalExpense = transactions
+    .filter((transaction) => transaction.type === "expense")
+    .reduce((total, transaction) => {
+      return total + Number(transaction.amount);
+    }, 0);
+
+  const totalBalance = totalIncome - totalExpense;
+
+  // Hanya pendapatan ojol yang tanggalnya sama dengan hari ini.
+  const today = getLocalDateString();
+
+  const todayOjolIncome = transactions
+    .filter((transaction) => {
+      return (
+        transaction.type === "income" &&
+        transaction.category === "Pendapatan Ojol" &&
+        transaction.date === today
+      );
+    })
+    .reduce((total, transaction) => {
+      return total + Number(transaction.amount);
+    }, 0);
+
+  document.getElementById("totalIncome").textContent =
+    formatRupiah(totalIncome);
+
+  document.getElementById("totalExpense").textContent =
+    formatRupiah(totalExpense);
+
+  document.getElementById("totalBalance").textContent =
+    formatRupiah(totalBalance);
+
+  document.getElementById("todayOjolIncome").textContent =
+    formatRupiah(todayOjolIncome);
+}
+
+// Membuat tampilan satu transaksi.
 function createTransactionElement(transaction) {
+  const isIncome = transaction.type === "income";
+
   const item = document.createElement("article");
   item.className = "transaction-item";
 
   const main = document.createElement("div");
   main.className = "transaction-main";
 
-  const symbol = document.createElement("span");
-  const isIncome = transaction.type === "pemasukan";
+  const symbol = document.createElement("div");
+  symbol.className = `transaction-symbol ${
+    isIncome ? "income" : "expense"
+  }`;
 
-  symbol.className = isIncome
-    ? "transaction-symbol"
-    : "transaction-symbol expense";
-
-  symbol.textContent = isIncome ? "+" : "−";
-  symbol.setAttribute("aria-hidden", "true");
+  symbol.textContent =
+    transaction.category === "Pendapatan Ojol"
+      ? "🏍"
+      : isIncome
+        ? "↗"
+        : "↘";
 
   const details = document.createElement("div");
   details.className = "transaction-details";
 
-  const category = document.createElement("strong");
-  category.textContent = transaction.category;
+  const title = document.createElement("h3");
+  title.textContent = transaction.category;
 
   const description = document.createElement("p");
 
-  const typeLabel = isIncome ? "Pemasukan" : "Pengeluaran";
-  const note = transaction.note ? ` · ${transaction.note}` : "";
+  const formattedDate = new Date(
+    `${transaction.date}T12:00:00`
+  ).toLocaleDateString("id-ID", {
+    day: "numeric",
+    month: "short",
+    year: "numeric"
+  });
 
-  description.textContent =
-    `${formatDate(transaction.date)} · ${typeLabel}${note}`;
+  description.textContent = transaction.note
+    ? `${formattedDate} · ${transaction.note}`
+    : formattedDate;
 
-  details.append(category, description);
+  details.append(title, description);
   main.append(symbol, details);
 
-  const amount = document.createElement("span");
+  const amount = document.createElement("div");
+  amount.className = `transaction-amount ${
+    isIncome ? "income" : "expense"
+  }`;
 
-  amount.className = isIncome
-    ? "transaction-amount amount-income"
-    : "transaction-amount amount-expense";
-
-  const sign = isIncome ? "+" : "−";
-  amount.textContent = `${sign}${formatRupiah(transaction.amount)}`;
+  amount.textContent =
+    `${isIncome ? "+" : "−"}${formatRupiah(
+      Number(transaction.amount)
+    )}`;
 
   item.append(main, amount);
 
   return item;
 }
 
-function renderTransactionList(container, list) {
+// Menampilkan daftar transaksi.
+function renderTransactionList(containerId, emptyId, list) {
+  const container = document.getElementById(containerId);
+  const emptyMessage = document.getElementById(emptyId);
+
   container.replaceChildren();
 
-  if (list.length === 0) {
-    const emptyMessage = document.createElement("p");
-
-    emptyMessage.className = "empty-state";
-    emptyMessage.textContent = "Belum ada transaksi.";
-
-    container.appendChild(emptyMessage);
-    return;
-  }
+  emptyMessage.hidden = list.length > 0;
 
   list.forEach((transaction) => {
     container.appendChild(createTransactionElement(transaction));
   });
 }
 
-/* SORT TRANSACTIONS */
-function getSortedTransactions() {
-  return [...transactions].sort((a, b) => {
-    const dateComparison = b.date.localeCompare(a.date);
-
-    if (dateComparison !== 0) {
-      return dateComparison;
-    }
-
-    return b.id.localeCompare(a.id);
-  });
-}
-
-/* UPDATE THE INTERFACE */
+// Memperbarui seluruh tampilan aplikasi.
 function renderApp() {
   renderSummary();
 
   const sortedTransactions = getSortedTransactions();
 
   renderTransactionList(
-    recentTransactionsElement,
+    "recentTransactions",
+    "recentEmpty",
     sortedTransactions.slice(0, 5)
   );
 
   renderTransactionList(
-    allTransactionsElement,
+    "allTransactions",
+    "allEmpty",
     sortedTransactions
   );
 }
 
-/* ADD A TRANSACTION */
+// Menyimpan transaksi baru.
 transactionForm.addEventListener("submit", (event) => {
   event.preventDefault();
 
-  const amount = Number(transactionAmount.value);
   const date = transactionDate.value;
   const type = transactionType.value;
   const category = transactionCategory.value;
+  const amount = Number(transactionAmount.value);
   const note = transactionNote.value.trim();
 
-  if (!date) {
-    showToast("Silakan pilih tanggal transaksi.");
-    transactionDate.focus();
+  if (!date || !category || !Number.isFinite(amount) || amount <= 0) {
+    showToast("Periksa kembali data transaksi.");
     return;
   }
 
-  if (!Number.isFinite(amount) || amount <= 0) {
-    showToast("Jumlah transaksi harus lebih dari nol.");
-    transactionAmount.focus();
-    return;
-  }
-
-  if (!["pemasukan", "pengeluaran"].includes(type)) {
-    showToast("Silakan pilih jenis transaksi yang valid.");
-    transactionType.focus();
-    return;
-  }
-
-  if (!category) {
-    showToast("Silakan pilih kategori transaksi.");
-    transactionCategory.focus();
-    return;
-  }
-
-  const transaction = {
-    id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+  const newTransaction = {
+    id: Date.now(),
     date,
     type,
     category,
@@ -329,7 +324,7 @@ transactionForm.addEventListener("submit", (event) => {
     note
   };
 
-  transactions.push(transaction);
+  transactions.push(newTransaction);
 
   if (!saveTransactions()) {
     transactions.pop();
@@ -341,34 +336,48 @@ transactionForm.addEventListener("submit", (event) => {
   transactionForm.reset();
   transactionDate.value = getLocalDateString();
 
-  showToast("Transaksi berhasil disimpan.");
-  openPage("transaksi");
+  updateCategoryOptions();
+
+  showToast("Transaksi berhasil disimpan!");
 });
 
-/* RESET FORM */
-transactionForm.addEventListener("reset", () => {
-  setTimeout(() => {
-    transactionDate.value = getLocalDateString();
-    transactionType.value = "pemasukan";
-  }, 0);
-});
+// Menghapus semua transaksi.
+document
+  .getElementById("resetTransactions")
+  .addEventListener("click", () => {
+    if (transactions.length === 0) {
+      showToast("Belum ada transaksi untuk dihapus.");
+      return;
+    }
 
-/* INITIALIZE APPLICATION */
-function initializeApp() {
-  const today = new Date();
+    const confirmed = confirm(
+      "Yakin ingin menghapus semua transaksi? Tindakan ini tidak dapat dibatalkan."
+    );
 
-  todayDateElement.textContent = today.toLocaleDateString("id-ID", {
-    day: "numeric",
-    month: "short",
-    year: "numeric"
+    if (!confirmed) {
+      return;
+    }
+
+    const previousTransactions = transactions;
+    transactions = [];
+
+    if (!saveTransactions()) {
+      transactions = previousTransactions;
+      return;
+    }
+
+    renderApp();
+    showToast("Semua transaksi berhasil dihapus.");
   });
+
+// Inisialisasi aplikasi.
+function initializeApp() {
+  renderDate();
 
   transactionDate.value = getLocalDateString();
 
-  toastElement.hidden = true;
-
+  updateCategoryOptions();
   renderApp();
-  openPage("ringkasan");
 }
 
 initializeApp();
